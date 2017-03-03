@@ -15,6 +15,7 @@
 #include "lib/ftl/macros.h"
 #include "lib/ftl/tasks/task_runner.h"
 #include "lib/mtl/tasks/message_loop.h"
+#include "apps/icu_data/lib/icu_data.h"
 
 namespace flutter_runner {
 namespace {
@@ -54,6 +55,10 @@ App::App() {
   blink::SetFontProvider(
       context_->ConnectToEnvironmentService<fonts::FontProvider>());
 
+  if (!icu_data::Initialize(context_->environment_services().get())) {
+    FTL_LOG(ERROR) << "Could not initialize ICU data.";
+  }
+
   context_->outgoing_services()->AddService<app::ApplicationRunner>(
       [this](fidl::InterfaceRequest<app::ApplicationRunner> request) {
         runner_bindings_.AddBinding(this, std::move(request));
@@ -61,6 +66,7 @@ App::App() {
 }
 
 App::~App() {
+  icu_data::Release();
   blink::Threads::Gpu()->PostTask(QuitMessageLoop);
   blink::Threads::IO()->PostTask(QuitMessageLoop);
 }
